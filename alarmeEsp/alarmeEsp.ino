@@ -14,7 +14,7 @@
 #define WIFI_PASS "fogazzaa"
 
 #define IO_USERNAME "fogazza"
-#define IO_KEY "aio_Ymaa42WF9j7LgA6Lq1DBEqIzdOB5"
+#define IO_KEY "aio_okjk27xGTyg1fh1V41HWKQ60BKGK"
 
 bool alarmeAtivo = false;
 unsigned int distancia = 0;
@@ -58,15 +58,12 @@ void setup() {
 
   Serial.println();
   Serial.println(io.statusText());
+  Serial.println();
 
   botaoalarme->onMessage(handleAlarme);
-
-  Serial.println("Solicitando o Estado Inicial do Alarme: ");
   botaoalarme->get();
 
   delay(1000);
-
-  isInitialSync = false;
 }
 
 void loop() {
@@ -78,11 +75,12 @@ void loop() {
     alarmeAtivo = !alarmeAtivo;
     botaoalarme->save(String(alarmeAtivo ? "true" : "false"));
     Serial.println(alarmeAtivo ? "Alarme ARMADO pelo Botão Físico" : "Alarme DESARMADO pelo Botão Físico");
-    Serial.println("");
+    Serial.println();
   }
 
   distancia = sensorUltra.ping_cm();
 
+  Serial.println();
   Serial.print(F("Distância Lida: "));
   Serial.println(distancia);
 
