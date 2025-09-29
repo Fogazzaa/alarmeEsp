@@ -10,11 +10,11 @@
 #include "AdafruitIO_WiFi.h"
 #include "NewPing.h"
 
-#define WIFI_SSID "fogazzaa"
-#define WIFI_PASS "fogazzaa"
+#define WIFI_SSID "fogazzaaaa"
+#define WIFI_PASS "fogazzaaaa"
 
 #define IO_USERNAME "fogazza"
-#define IO_KEY "aio_okjk27xGTyg1fh1V41HWKQ60BKGK"
+#define IO_KEY "aio_IFYb8201PjuQZlR4OoLHVOuGmlgw"
 
 bool alarmeAtivo = false;
 unsigned int distancia = 0;
@@ -32,68 +32,74 @@ AdafruitIO_Feed *botaoalarme = io.feed("botaoalarme");
 AdafruitIO_Feed *sensorultrassonico = io.feed("sensorultrassonico");
 
 void setup() {
+    pinMode(pinoLedVermelho, OUTPUT);
+    pinMode(pinoLedVerde, OUTPUT);
+    pinMode(pinoLedAmarelo, OUTPUT);
 
-  pinMode(pinoLedVermelho, OUTPUT);
-  pinMode(pinoLedVerde, OUTPUT);
-  pinMode(pinoLedAmarelo, OUTPUT);
+    pinMode(pinoBuzzer, OUTPUT);
+    pinMode(pinoBotao, INPUT);
+    Serial.begin(115200);
 
-  pinMode(pinoBuzzer, OUTPUT);
-  pinMode(pinoBotao, INPUT);
-  Serial.begin(115200);
+    while (!Serial)
+        ;
 
-  while (!Serial)
-    ;
+    Serial.println("Conectando com AdafruitIO");
+    io.connect();
 
-  Serial.println("Conectando com AdafruitIO");
-  io.connect();
+    int numTentativas = 0;
 
-  int numTentativas = 0;
+    while (io.status() < AIO_CONNECTED) {
+        Serial.print(numTentativas);
+        Serial.println(" - Conexão Ainda Não Realizada");
+        numTentativas = numTentativas + 1;
+        delay(500);
+    }
 
-  while (io.status() < AIO_CONNECTED) {
-    Serial.print(numTentativas);
-    Serial.println(" - Conexão Ainda Não Realizada");
-    numTentativas = numTentativas + 1;
-    delay(500);
-  }
+    Serial.println();
+    Serial.println(io.statusText());
+    Serial.println();
 
-  Serial.println();
-  Serial.println(io.statusText());
-  Serial.println();
+    botaoalarme->onMessage(handleAlarme);
+    botaoalarme->get();
 
-  botaoalarme->onMessage(handleAlarme);
-  botaoalarme->get();
+    digitalWrite(pinoLedAmarelo, LOW);
+    digitalWrite(pinoLedVerde, HIGH);
 
-  delay(1000);
+    delay(1000);
 }
 
 void loop() {
+    io.run();
 
-  io.run();
+    if (digitalRead(pinoBotao) == 1) {
+        alarmeAtivo = !alarmeAtivo;
+        botaoalarme->save(String(alarmeAtivo ? "true" : "false"));
+        Serial.println(alarmeAtivo ? "Alarme ARMADO pelo Botão Físico" : "Alarme DESARMADO pelo Botão Físico");
+        Serial.println();
 
-  if (digitalRead(pinoBotao) == 1) {
-    delay(200);
-    alarmeAtivo = !alarmeAtivo;
-    botaoalarme->save(String(alarmeAtivo ? "true" : "false"));
-    Serial.println(alarmeAtivo ? "Alarme ARMADO pelo Botão Físico" : "Alarme DESARMADO pelo Botão Físico");
-    Serial.println();
-  }
+        if (alarmeAtivo) {
+            digitalWrite(pinoLedAmarelo, HIGH);
+            digitalWrite(pinoLedVerde, LOW);
+        } else {
+            digitalWrite(pinoLedAmarelo, LOW);
+            digitalWrite(pinoLedVerde, HIGH);
+        }
 
-  distancia = sensorUltra.ping_cm();
+        delay(500);
+    }
 
-  Serial.println();
-  Serial.print(F("Distância Lida: "));
-  Serial.println(distancia);
+    distancia = sensorUltra.ping_cm();
 
-  if (alarmeAtivo && distancia > 0 && distancia < limiteDistancia) {
-    ativarAlerta();
-  } else {
-    desativarAlerta();
-  }
+    if (alarmeAtivo && distancia > 0 && distancia < limiteDistancia) {
+        ativarAlerta();
+    } else {
+        desativarAlerta();
+    }
 
-  delay(3000);
+    delay(100);
 
-  if (distancia != ultimaDistanciaEnviada) {
-    sensorultrassonico->save(distancia);
-    ultimaDistanciaEnviada = distancia;
-  }
+    if (distancia != ultimaDistanciaEnviada) {
+        sensorultrassonico->save(distancia);
+        ultimaDistanciaEnviada = distancia;
+    }
 }
